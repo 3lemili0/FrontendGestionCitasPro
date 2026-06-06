@@ -1,0 +1,102 @@
+<div class="cita-container">
+
+  <div class="control-panel">
+    <div class="form-box">
+      <h2>Agendar Cita</h2>
+      <p>Selecciona un profesional y una fecha para ver los horarios disponibles.</p>
+
+      <div class="form-group">
+        <label for="profesional">Profesional</label>
+        @if (isLoadingProfesionales) {
+          <p>Cargando...</p>
+        } @else {
+          <select id="profesional" [(ngModel)]="profesionalSeleccionadoId" (ngModelChange)="onProfesionalChange()">
+            <option value="" disabled>-- Selecciona --</option>
+            @for (profesional of profesionales; track profesional._id) {
+              <option [value]="profesional._id">
+                {{ profesional.nombre }} {{ profesional.apellido }}
+              </option>
+            }
+          </select>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="fecha">Fecha</label>
+        <input type="date" id="fecha" [(ngModel)]="fechaSeleccionada" (ngModelChange)="onFechaChange()" [disabled]="!profesionalSeleccionadoId">
+      </div>
+
+      @if (horarioSeleccionado) {
+        <div class="reserva-form">
+          <h4>Confirma tu Cita</h4>
+          <p><strong>Horario:</strong> {{ horarioSeleccionado | date:'h:mm a':'UTC' }}</p>
+          <div class="form-group">
+            <label for="motivo">Motivo de la Cita</label>
+            <textarea id="motivo" rows="4" [(ngModel)]="motivoCita" placeholder="Ej: Consulta general..."></textarea>
+          </div>
+          <button class="submit-button" (click)="confirmarReserva()" [disabled]="isReservando || !motivoCita">
+            @if (isReservando) {
+              <span>Reservando...</span>
+            } @else {
+              <span>Confirmar Cita</span>
+            }
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="horarios-panel">
+    <h3>Horarios Disponibles</h3>
+    
+    @if (!profesionalSeleccionadoId) {
+      <div class="placeholder">
+        <p>Por favor, selecciona un profesional para ver su disponibilidad.</p>
+      </div>
+    } @else if (isLoadingHorarios) {
+      <div class="placeholder">
+        <p>Buscando horarios...</p>
+      </div>
+    } @else if (!hayHorariosDisponibles) {
+      <div class="placeholder">
+        <p>No hay horarios disponibles para el día seleccionado.</p>
+      </div>
+    } @else {
+      <div class="jornada-container">
+        @if (horariosManana.length > 0) {
+          <div class="jornada-section">
+            <h4>Mañana</h4>
+            <div class="horarios-grid">
+              @for (horario of horariosManana; track horario) {
+                <button 
+                  class="horario-btn"
+                  [class.selected]="horario === horarioSeleccionado"
+                  (click)="seleccionarHorario(horario)">
+                  <!-- CAMBIO AQUÍ: Añadimos 'UTC' al pipe -->
+                  {{ horario | date:'h:mm a':'UTC' }}
+                </button>
+              }
+            </div>
+          </div>
+        }
+
+        @if (horariosTarde.length > 0) {
+          <div class="jornada-section">
+            <h4>Tarde</h4>
+            <div class="horarios-grid">
+              @for (horario of horariosTarde; track horario) {
+                <button 
+                  class="horario-btn"
+                  [class.selected]="horario === horarioSeleccionado"
+                  (click)="seleccionarHorario(horario)">
+                  {{ horario | date:'h:mm a':'UTC' }}
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+</div>

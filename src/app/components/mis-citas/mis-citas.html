@@ -1,0 +1,34 @@
+<div class="citas-container">
+  <h3>Mis Próximas Citas</h3>
+
+  @if (isLoading) {
+    <p>Cargando citas...</p>
+  } @else if (error) {
+    <p class="error-message">{{ error }}</p>
+  } @else if (citas.length > 0) {
+    <table class="citas-table">
+      <thead>
+        <tr>
+          <th>Profesional</th>
+          <th>Fecha y Hora</th>
+          <th>Motivo</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (cita of citas; track cita._id) {
+          <tr>
+            <td>{{ typeof cita.profesional === 'object' ? cita.profesional.nombre : 'Profesional' }}</td> 
+            <td>{{ cita.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
+            <td>{{ cita.motivo }}</td>
+            <td>
+              <span class="status" [ngClass]="cita.estado">{{ cita.estado }}</span>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else {
+    <p>No tienes citas programadas.</p>
+  }
+</div>

@@ -1,0 +1,174 @@
+<div class="dashboard-layout" [ngClass]="{ 'calendario-oculto': !calendarioVisible }">
+  <div class="main-content">
+    <div class="dashboard-container">
+      <div class="header">
+        <div class="header-title">
+          @if (usuarioLogueado) {
+            <p class="welcome-message">Hola, {{ usuarioLogueado.nombre }}</p>
+          }
+        </div>
+        <div class="header-actions">
+          @if (usuarioLogueado?.rol === 'profesional') {
+            <a routerLink="/gestionar-disponibilidad" class="btn-secundario">Gestionar Disponibilidad</a>
+            <button class="btn-primario" (click)="abrirModalCrearCita()">+ Crear Cita</button>
+          }
+          <button class="btn-logout" (click)="cerrarSesion()">Cerrar Sesión</button>
+        </div>
+      </div>
+
+      <div class="agenda-header">
+        <h3>Mi Agenda de Citas</h3>
+        <div class="search-bar">
+          <input 
+            type="text" 
+            placeholder="Buscar por nombre..." 
+            [value]="terminoBusqueda()"
+            (input)="onBusquedaInput($event)">
+        </div>
+      </div>
+      
+      @if (isLoading) {
+        <p class="loading-text">Cargando tu agenda...</p>
+      } @else {
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>{{ usuarioLogueado?.rol === 'profesional' ? 'Cliente' : 'Profesional' }}</th>
+                <th>Fecha</th>
+                <th>Hora</th>
+                <th>Motivo</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (cita of citasFiltradas(); track cita._id) {
+                <tr>
+                  <td>{{ getNombreContraparte(cita) }}</td>
+                  <td>{{ cita.fecha | date:'dd/MM/yyyy' }}</td>
+                  <td>{{ cita.fecha | date:'h:mm a':'UTC' }}</td>
+                  <td>{{ cita.motivo }}</td>
+                  <td>
+                    <span class="status" [ngClass]="cita.estado.toLowerCase()">
+                      {{ cita.estado }}
+                    </span>
+                  </td>
+                  <td class="acciones">
+                    <button 
+                      class="btn-accion btn-editar" 
+                      (click)="abrirModalEditarCita(cita)"
+                      [disabled]="cita.estado === 'Cancelada' || usuarioLogueado?.rol !== 'profesional'">
+                      Editar
+                    </button>
+                    <button 
+                      class="btn-accion btn-cancelar" 
+                      (click)="onCancelarCita(cita._id)"
+                      [disabled]="cita.estado === 'Cancelada'">
+                      Cancelar
+                    </button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="6" class="no-citas">No tienes citas programadas.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+
+  <button class="toggle-calendar-btn" (click)="toggleCalendario()" title="Mostrar/Ocultar Calendario">
+    <span>›</span>
+  </button>
+  <div class="calendar-panel">
+    <full-calendar [options]="calendarOptions"></full-calendar>
+  </div>
+
+</div>
+
+@if (mostrarModal) {
+  <div class="modal-overlay" (click)="cerrarModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <h3>{{ esModoEdicion ? 'Editar Cita' : 'Crear Cita Manualmente' }}</h3>
+      <form (ngSubmit)="guardarCita()">
+        <div class="form-group">
+          <label for="cliente">Cliente</label>
+          @if (esModoEdicion && citaParaEditar) {
+            <input type="text" [value]="getNombreContraparte(citaParaEditar)" disabled>
+          } @else {
+            @if (isLoadingClientes) {
+              <p>Cargando clientes...</p>
+            } @else {
+              <select id="cliente" name="cliente" [(ngModel)]="citaManualData.clienteId" required>
+                <option value="" disabled>-- Selecciona un cliente --</option>
+                @for (cliente of clientes; track cliente._id) {
+                  <option [value]="cliente._id">
+                    {{ cliente.nombre }} {{ cliente.apellido }}
+                  </option>
+                }
+              </select>
+            }
+          }
+        </div>
+        <div class="form-group">
+          <label for="fecha">Fecha de la Cita</label>
+          <input type="date" id="fecha" name="fecha" [(ngModel)]="citaManualData.fecha" required>
+        </div>
+        <div class="form-group">
+          <label for="hora">Hora de la Cita</label>
+          <input type="time" id="hora" name="hora" [(ngModel)]="citaManualData.hora" required>
+        </div>
+        <div class="form-group">
+          <label for="motivo">Motivo de la Cita</label>
+          <textarea id="motivo" name="motivo" rows="4" [(ngModel)]="citaManualData.motivo" required></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secundario" (click)="cerrarModal()">Cancelar</button>
+          <button type="submit" class="btn-primario" [disabled]="isSavingCita">
+            @if (isSavingCita) {
+              <span>Guardando...</span>
+            } @else {
+              <span>{{ esModoEdicion ? 'Guardar Cambios' : 'Guardar Cita' }}</span>
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+@if (mostrarModalRecordatorio && citaSeleccionada) {
+  <div class="modal-overlay" (click)="cerrarModalRecordatorio()">
+    <div class="modal-content recordatorio" (click)="$event.stopPropagation()">
+      <h3>Detalles de la Cita</h3>
+      <div class="detalle-item">
+        <strong>{{ usuarioLogueado?.rol === 'profesional' ? 'Cliente:' : 'Profesional:' }}</strong>
+        <span>{{ getNombreContraparte(citaSeleccionada) }}</span>
+      </div>
+      <div class="detalle-item">
+        <strong>Fecha:</strong>
+        <span>{{ citaSeleccionada.fecha | date:'fullDate':'UTC' }}</span>
+      </div>
+      <div class="detalle-item">
+        <strong>Hora:</strong>
+        <span>{{ citaSeleccionada.fecha | date:'h:mm a':'UTC' }}</span>
+      </div>
+      <div class="detalle-item">
+        <strong>Motivo:</strong>
+        <p>{{ citaSeleccionada.motivo }}</p>
+      </div>
+      <div class="detalle-item">
+        <strong>Estado:</strong>
+        <span class="status" [ngClass]="citaSeleccionada.estado.toLowerCase()">
+          {{ citaSeleccionada.estado }}
+        </span>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-primario" (click)="cerrarModalRecordatorio()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,153 @@
+.cita-container {
+  display: flex;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  height: 100vh;
+  background-color: #f4f7f6;
+}
+
+.control-panel {
+  width: 380px;
+  padding: 40px;
+  background-color: #ffffff;
+  border-right: 1px solid #e0e0e0;
+  box-shadow: 2px 0 15px rgba(0, 0, 0, 0.05);
+}
+
+.form-box h2 {
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.form-box p {
+  color: #666;
+  margin-bottom: 30px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #555;
+}
+
+.form-group select,
+.form-group input[type="date"],
+.form-group textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.3s;
+}
+
+.form-group select:focus,
+.form-group input[type="date"]:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.horarios-panel {
+  flex-grow: 1;
+  padding: 40px;
+  overflow-y: auto;
+}
+
+.horarios-panel h3 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 30px;
+  color: #333;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 15px;
+}
+
+.jornada-section {
+  margin-bottom: 30px;
+}
+
+.jornada-section h4 {
+  font-size: 18px;
+  font-weight: 500;
+  color: #555;
+  margin-bottom: 15px;
+}
+
+.horarios-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 15px;
+}
+
+.horario-btn {
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 500;
+  border: 2px solid #007bff;
+  color: #007bff;
+  background-color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.horario-btn:hover {
+  background-color: #e9f5ff;
+}
+
+.horario-btn.selected {
+  background-color: #007bff;
+  color: #fff;
+  font-weight: 600;
+}
+
+.reserva-form {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.reserva-form h4 {
+  font-size: 20px;
+  margin-bottom: 15px;
+}
+
+.submit-button {
+  width: 100%;
+  padding: 15px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  background-color: #28a745;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.submit-button:disabled {
+  background-color: #9ddcb0;
+  cursor: not-allowed;
+}
+
+.submit-button:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+.placeholder {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  color: #888;
+  font-size: 18px;
+}
