@@ -98,7 +98,8 @@
         <div class="form-group">
           <label for="cliente">Cliente</label>
           @if (esModoEdicion && citaParaEditar) {
-            <input type="text" [value]="getNombreContraparte(citaParaEditar)" disabled>
+            <!-- --- ESTA ES LA LÍNEA CORREGIDA --- -->
+            <input type="text" id="cliente" [value]="getNombreContraparte(citaParaEditar)" disabled>
           } @else {
             @if (isLoadingClientes) {
               <p>Cargando clientes...</p>
