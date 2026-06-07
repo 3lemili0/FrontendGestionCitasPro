@@ -39,10 +39,8 @@ export default class DashboardComponent implements OnInit, OnDestroy {
     const busqueda = this.terminoBusqueda().toLowerCase();
     if (!busqueda) return citas;
     return citas.filter(cita => {
-      const contraparte = (this.usuarioLogueado?.rol === 'profesional' ? cita.cliente : cita.profesional) as Usuario;
-      if (!contraparte || typeof contraparte === 'string') return false;
-      return contraparte.nombre.toLowerCase().includes(busqueda) || 
-             contraparte.apellido.toLowerCase().includes(busqueda);
+      const nombreContraparte = this.getNombreContraparte(cita).toLowerCase();
+      return nombreContraparte.includes(busqueda);
     });
   });
 
@@ -81,27 +79,7 @@ export default class DashboardComponent implements OnInit, OnDestroy {
       this.usuarioLogueado = usuario;
 
       if (usuario) {
-        this.isLoading = true;
-        this.citaService.getMisCitas().subscribe({
-          next: (data) => {
-            this.todasMisCitas.set(data);
-            this.isLoading = false;
-
-            const eventos = data.map(cita => ({
-              id: cita._id,
-              title: this.getNombreContraparte(cita),
-              date: cita.fecha,
-              backgroundColor: this.getColorPorEstado(cita.estado),
-              borderColor: this.getColorPorEstado(cita.estado)
-            }));
-            this.calendarOptions.events = eventos;
-          },
-          error: (err) => {
-            console.error('Error al cargar las citas', err);
-            alert('No se pudo cargar tu agenda. Por favor, intenta recargar la página.');
-            this.isLoading = false;
-          }
-        });
+        this.cargarCitasYClientes();
       } else {
         this.isLoading = false;
         this.todasMisCitas.set([]);
@@ -113,6 +91,45 @@ export default class DashboardComponent implements OnInit, OnDestroy {
     if (this.usuarioSubscription) {
       this.usuarioSubscription.unsubscribe();
     }
+  }
+
+  private cargarCitasYClientes(): void {
+    this.isLoading = true;
+
+    // Primero traemos los clientes para tener la base de datos de nombres mapeada
+    this.citaService.getClientes().subscribe({
+      next: (usuarios) => {
+        this.clientes = usuarios.filter(u => {
+          const campoRol = u.rol || (u as any).role;
+          return campoRol && campoRol.toLowerCase() === 'cliente';
+        });
+
+        // Seguidamente cargamos las citas y cruzamos la información
+        this.citaService.getMisCitas().subscribe({
+          next: (citas) => {
+            const citasMapeadas = citas.map(cita => {
+              if (typeof cita.cliente === 'string') {
+                const datosCliente = this.clientes.find(c => c._id === cita.cliente);
+                if (datosCliente) cita.cliente = datosCliente;
+              }
+              return cita;
+            });
+
+            this.todasMisCitas.set(citasMapeadas);
+            this.actualizarEventosCalendario();
+            this.isLoading = false;
+          },
+          error: (err) => {
+            console.error('Error al cargar las citas', err);
+            this.isLoading = false;
+          }
+        });
+      },
+      error: (err) => {
+        console.error('Error al precargar clientes para mapeo:', err);
+        this.isLoading = false;
+      }
+    });
   }
 
   toggleCalendario(): void {
@@ -142,37 +159,19 @@ export default class DashboardComponent implements OnInit, OnDestroy {
     this.esModoEdicion = false;
     this.citaManualData = { clienteId: '', fecha: '', hora: '', motivo: '' };
     this.mostrarModal = true;
-    this.isLoadingClientes = true;
-    this.clientes = [];
-
-    this.citaService.getClientes().subscribe({
-      next: (data) => {
-        console.log('Respuesta cruda del servidor:', data);
-        
-        if (!data || data.length === 0) {
-          this.clientes = [];
-        } else {
-          this.clientes = data.filter(u => {
-            const campoRol = u.rol || (u as any).role;
-            return campoRol && campoRol.toLowerCase() === 'cliente';
-          });
-        }
-        this.isLoadingClientes = false;
-      },
-      error: (err) => {
-        console.error('Error crítico detectado al pedir los clientes:', err);
-        alert('Error al cargar clientes.');
-        this.isLoadingClientes = false;
-      }
-    });
   }
 
   abrirModalEditarCita(cita: Cita): void {
     this.esModoEdicion = true;
     this.citaParaEditar = cita;
     const fechaCita = new Date(cita.fecha);
+    
+    const clienteId = typeof cita.cliente === 'string' 
+      ? cita.cliente 
+      : (cita.cliente as Usuario)._id;
+
     this.citaManualData = {
-      clienteId: (cita.cliente as Usuario)._id,
+      clienteId: clienteId,
       fecha: formatDate(fechaCita, 'yyyy-MM-dd', 'en-US'),
       hora: formatDate(fechaCita, 'HH:mm', 'en-US', 'UTC'),
       motivo: cita.motivo
@@ -205,7 +204,7 @@ export default class DashboardComponent implements OnInit, OnDestroy {
     this.citaService.crearCitaManual(datosFinales).subscribe({
       next: (nuevaCita) => {
         alert('Cita creada manualmente con éxito.');
-        const clienteSeleccionado = this.clientes.find(c => c._id === nuevaCita.cliente);
+        const clienteSeleccionado = this.clientes.find(c => c._id === nuevaCita.cliente || c._id === (nuevaCita.cliente as any));
         if (clienteSeleccionado) {
           nuevaCita.cliente = clienteSeleccionado;
         }
@@ -247,13 +246,18 @@ export default class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  // RESTRUCTURADO CON EL NOMBRE EXACTO DEL HTML (onCancelarCita)
   onCancelarCita(citaId: string): void {
     if (!confirm('¿Estás seguro de que deseas cancelar esta cita?')) return;
 
     this.citaService.cancelarCita(citaId).subscribe({
       next: (citaCancelada) => {
         alert('La cita ha sido cancelada.');
+        
+        const clienteSeleccionado = this.clientes.find(c => c._id === citaCancelada.cliente || c._id === (citaCancelada.cliente as any));
+        if (clienteSeleccionado) {
+          citaCancelada.cliente = clienteSeleccionado;
+        }
+
         this.todasMisCitas.update(citas => 
           citas.map(c => c._id === citaId ? citaCancelada : c)
         );
@@ -271,10 +275,19 @@ export default class DashboardComponent implements OnInit, OnDestroy {
   }
 
   getNombreContraparte(cita: Cita): string {
-    if (!this.usuarioLogueado) return '';
-    const contraparte = (this.usuarioLogueado.rol === 'profesional' ? cita.cliente : cita.profesional) as Usuario;
-    if (!contraparte || typeof contraparte === 'string') return 'Cargando...';
-    return `${contraparte.nombre} ${contraparte.apellido}`;
+    if (!this.usuarioLogueado) return 'Sin usuario';
+    
+    const esProf = this.usuarioLogueado.rol === 'profesional';
+    const contraparte = esProf ? cita.cliente : cita.profesional;
+
+    if (!contraparte) return 'Sin asignar';
+
+    if (typeof contraparte === 'string') {
+      const encontrado = this.clientes.find(c => c._id === contraparte);
+      return encontrado ? `${encontrado.nombre} ${encontrado.apellido}` : `ID: ${contraparte.substring(0,6)}`;
+    }
+
+    return `${contraparte.nombre || ''} ${contraparte.apellido || ''}`.trim() || 'Usuario Anónimo';
   }
 
   private actualizarEventosCalendario(): void {
