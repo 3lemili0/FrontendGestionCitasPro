@@ -143,29 +143,25 @@ export default class DashboardComponent implements OnInit, OnDestroy {
     this.citaManualData = { clienteId: '', fecha: '', hora: '', motivo: '' };
     this.mostrarModal = true;
     this.isLoadingClientes = true;
-    this.clientes = []; // Limpiamos la lista previa para evitar residuos visuales
+    this.clientes = [];
 
-    // Ejecutamos la suscripción asegurando el flujo nativo
     this.citaService.getClientes().subscribe({
       next: (data) => {
         console.log('Respuesta cruda del servidor:', data);
         
         if (!data || data.length === 0) {
-          console.warn('El backend respondió con un arreglo vacío.');
           this.clientes = [];
         } else {
-          // Filtrado tolerante: busca si coincide con el rol de cliente sin importar mayúsculas
           this.clientes = data.filter(u => {
             const campoRol = u.rol || (u as any).role;
             return campoRol && campoRol.toLowerCase() === 'cliente';
           });
-          console.log('Clientes filtrados listos para el select:', this.clientes);
         }
         this.isLoadingClientes = false;
       },
       error: (err) => {
         console.error('Error crítico detectado al pedir los clientes:', err);
-        alert(`Error al cargar clientes: ${err.message || 'Error de comunicación'}`);
+        alert('Error al cargar clientes.');
         this.isLoadingClientes = false;
       }
     });
@@ -251,7 +247,8 @@ export default class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  onCancelCita(citaId: string): void {
+  // RESTRUCTURADO CON EL NOMBRE EXACTO DEL HTML (onCancelarCita)
+  onCancelarCita(citaId: string): void {
     if (!confirm('¿Estás seguro de que deseas cancelar esta cita?')) return;
 
     this.citaService.cancelarCita(citaId).subscribe({
