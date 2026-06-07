@@ -7,14 +7,20 @@
             <p class="welcome-message">Hola, {{ usuarioLogueado.nombre }}</p>
           }
         </div>
+        
         <div class="header-actions">
           @if (usuarioLogueado?.rol === 'profesional') {
             <a routerLink="/gestionar-disponibilidad" class="btn-secundario">Gestionar Disponibilidad</a>
             <button class="btn-primario" (click)="abrirModalCrearCita()">+ Crear Cita</button>
           }
+
+          @if (usuarioLogueado?.rol === 'cliente') {
+            <a routerLink="/solicitar-cita" class="btn-primario">+ Solicitar Cita</a>
+          }
+
           <button class="btn-logout" (click)="cerrarSesion()">Cerrar Sesión</button>
         </div>
-      </div>
+        </div>
 
       <div class="agenda-header">
         <h3>Mi Agenda de Citas</h3>
@@ -98,7 +104,6 @@
         <div class="form-group">
           <label for="cliente">Cliente</label>
           @if (esModoEdicion && citaParaEditar) {
-            <!-- --- ESTA ES LA LÍNEA CORREGIDA --- -->
             <input type="text" id="cliente" [value]="getNombreContraparte(citaParaEditar)" disabled>
           } @else {
             @if (isLoadingClientes) {
@@ -141,6 +146,7 @@
     </div>
   </div>
 }
+
 @if (mostrarModalRecordatorio && citaSeleccionada) {
   <div class="modal-overlay" (click)="cerrarModalRecordatorio()">
     <div class="modal-content recordatorio" (click)="$event.stopPropagation()">
