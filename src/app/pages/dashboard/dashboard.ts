@@ -33,6 +33,7 @@ export default class DashboardComponent implements OnInit, OnDestroy {
   private usuarioSubscription!: Subscription;
   private todasMisCitas = signal<Cita[]>([]);
   terminoBusqueda = signal<string>('');
+  
   citasFiltradas = computed(() => {
     const citas = this.todasMisCitas();
     const busqueda = this.terminoBusqueda().toLowerCase();
@@ -44,6 +45,7 @@ export default class DashboardComponent implements OnInit, OnDestroy {
              contraparte.apellido.toLowerCase().includes(busqueda);
     });
   });
+
   isLoading = true;
   mostrarModal = false;
   esModoEdicion = false;
@@ -63,7 +65,6 @@ export default class DashboardComponent implements OnInit, OnDestroy {
     events: [],
     eventClick: this.handleEventClick.bind(this),
     locale: esLocale, 
-    
     headerToolbar: {
       left: 'prev,next today',
       center: 'title',
@@ -75,15 +76,12 @@ export default class DashboardComponent implements OnInit, OnDestroy {
     dayMaxEvents: true,
   };
 
-  // --- SECCIÓN CORREGIDA ---
   ngOnInit(): void {
     this.usuarioSubscription = this.authService.usuarioActual$.subscribe(usuario => {
       this.usuarioLogueado = usuario;
 
-      // Solo si tenemos un usuario válido, procedemos a cargar sus datos.
-      // Esto evita la "condición de carrera" al asegurar que la sesión está confirmada.
       if (usuario) {
-        this.isLoading = true; // Movemos el loading aquí para que se active en el momento correcto.
+        this.isLoading = true;
         this.citaService.getMisCitas().subscribe({
           next: (data) => {
             this.todasMisCitas.set(data);
@@ -105,13 +103,11 @@ export default class DashboardComponent implements OnInit, OnDestroy {
           }
         });
       } else {
-        // Si por alguna razón no hay usuario (ej. logout), nos aseguramos de que todo esté limpio.
         this.isLoading = false;
         this.todasMisCitas.set([]);
       }
     });
   }
-  // --- FIN DE LA SECCIÓN CORREGIDA ---
 
   ngOnDestroy(): void {
     if (this.usuarioSubscription) {
@@ -147,12 +143,21 @@ export default class DashboardComponent implements OnInit, OnDestroy {
     this.citaManualData = { clienteId: '', fecha: '', hora: '', motivo: '' };
     this.mostrarModal = true;
     this.isLoadingClientes = true;
+    
     this.citaService.getClientes().subscribe({
       next: (data) => {
-        this.clientes = data.filter(u => u.rol === 'cliente');
+        console.log('Usuarios recibidos del Backend:', data);
+        
+        // Filtro robusto que tolera las propiedades 'rol' o 'role' y mayúsculas/minúsculas
+        this.clientes = data.filter(u => {
+          const rolUsuario = u.rol || (u as any).role; 
+          return rolUsuario && rolUsuario.toLowerCase() === 'cliente';
+        });
+        
         this.isLoadingClientes = false;
       },
       error: (err) => {
+        console.error('Error al obtener clientes:', err);
         alert('No se pudo cargar la lista de clientes.');
         this.cerrarModal();
       }
@@ -239,7 +244,7 @@ export default class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  onCancelarCita(citaId: string): void {
+  onCancelCita(citaId: string): void {
     if (!confirm('¿Estás seguro de que deseas cancelar esta cita?')) return;
 
     this.citaService.cancelarCita(citaId).subscribe({
