@@ -26,7 +26,7 @@ export class CitaService {
 
   getClientes(): Observable<Usuario[]> {
     const headers = this.getAuthHeaders();
-    return this.http.get<Usuario[]>(`${API_CONFIG.baseUrl}/profesionales`, { headers });
+    return this.http.get<Usuario[]>(`${API_CONFIG.baseUrl}/usuarios/clientes`, { headers });
   }
 
   reservarCita(datosCita: { profesionalId: string, fecha: string, motivo: string }): Observable<Cita> {
@@ -36,7 +36,7 @@ export class CitaService {
 
   crearCitaManual(datosCita: { clienteId: string, fecha: string, motivo: string }): Observable<Cita> {
     const headers = this.getAuthHeaders();
-    return this.http.post<Cita>(`${this.apiUrl}/manual`, datosCita, { headers });
+    return this.http.post<Cita>(`${this.apiUrl}/crear-manual`, datosCita, { headers });
   }
 
   actualizarCita(citaId: string, datosCita: { fecha: string, motivo: string }): Observable<Cita> {
@@ -46,6 +46,6 @@ export class CitaService {
 
   cancelarCita(citaId: string): Observable<Cita> {
     const headers = this.getAuthHeaders();
-    return this.http.patch<Cita>(`${this.apiUrl}/${citaId}/cancelar`, {}, { headers });
+    return this.http.put<Cita>(`${this.apiUrl}/${citaId}/cancelar`, {}, { headers });
   }
 }
