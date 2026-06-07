@@ -75,32 +75,43 @@ export default class DashboardComponent implements OnInit, OnDestroy {
     dayMaxEvents: true,
   };
 
+  // --- SECCIÓN CORREGIDA ---
   ngOnInit(): void {
     this.usuarioSubscription = this.authService.usuarioActual$.subscribe(usuario => {
       this.usuarioLogueado = usuario;
-    });
 
-    this.citaService.getMisCitas().subscribe({
-      next: (data) => {
-        this.todasMisCitas.set(data);
-        this.isLoading = false;
+      // Solo si tenemos un usuario válido, procedemos a cargar sus datos.
+      // Esto evita la "condición de carrera" al asegurar que la sesión está confirmada.
+      if (usuario) {
+        this.isLoading = true; // Movemos el loading aquí para que se active en el momento correcto.
+        this.citaService.getMisCitas().subscribe({
+          next: (data) => {
+            this.todasMisCitas.set(data);
+            this.isLoading = false;
 
-        const eventos = data.map(cita => ({
-          id: cita._id,
-          title: this.getNombreContraparte(cita),
-          date: cita.fecha,
-          backgroundColor: this.getColorPorEstado(cita.estado),
-          borderColor: this.getColorPorEstado(cita.estado)
-        }));
-        this.calendarOptions.events = eventos;
-      },
-      error: (err) => {
-        console.error('Error al cargar las citas', err);
-        alert('No se pudo cargar tu agenda.');
+            const eventos = data.map(cita => ({
+              id: cita._id,
+              title: this.getNombreContraparte(cita),
+              date: cita.fecha,
+              backgroundColor: this.getColorPorEstado(cita.estado),
+              borderColor: this.getColorPorEstado(cita.estado)
+            }));
+            this.calendarOptions.events = eventos;
+          },
+          error: (err) => {
+            console.error('Error al cargar las citas', err);
+            alert('No se pudo cargar tu agenda. Por favor, intenta recargar la página.');
+            this.isLoading = false;
+          }
+        });
+      } else {
+        // Si por alguna razón no hay usuario (ej. logout), nos aseguramos de que todo esté limpio.
         this.isLoading = false;
+        this.todasMisCitas.set([]);
       }
     });
   }
+  // --- FIN DE LA SECCIÓN CORREGIDA ---
 
   ngOnDestroy(): void {
     if (this.usuarioSubscription) {
