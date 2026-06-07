@@ -143,23 +143,30 @@ export default class DashboardComponent implements OnInit, OnDestroy {
     this.citaManualData = { clienteId: '', fecha: '', hora: '', motivo: '' };
     this.mostrarModal = true;
     this.isLoadingClientes = true;
-    
+    this.clientes = []; // Limpiamos la lista previa para evitar residuos visuales
+
+    // Ejecutamos la suscripción asegurando el flujo nativo
     this.citaService.getClientes().subscribe({
       next: (data) => {
-        console.log('Usuarios recibidos del Backend:', data);
+        console.log('Respuesta cruda del servidor:', data);
         
-        // Filtro robusto que tolera las propiedades 'rol' o 'role' y mayúsculas/minúsculas
-        this.clientes = data.filter(u => {
-          const rolUsuario = u.rol || (u as any).role; 
-          return rolUsuario && rolUsuario.toLowerCase() === 'cliente';
-        });
-        
+        if (!data || data.length === 0) {
+          console.warn('El backend respondió con un arreglo vacío.');
+          this.clientes = [];
+        } else {
+          // Filtrado tolerante: busca si coincide con el rol de cliente sin importar mayúsculas
+          this.clientes = data.filter(u => {
+            const campoRol = u.rol || (u as any).role;
+            return campoRol && campoRol.toLowerCase() === 'cliente';
+          });
+          console.log('Clientes filtrados listos para el select:', this.clientes);
+        }
         this.isLoadingClientes = false;
       },
       error: (err) => {
-        console.error('Error al obtener clientes:', err);
-        alert('No se pudo cargar la lista de clientes.');
-        this.cerrarModal();
+        console.error('Error crítico detectado al pedir los clientes:', err);
+        alert(`Error al cargar clientes: ${err.message || 'Error de comunicación'}`);
+        this.isLoadingClientes = false;
       }
     });
   }
@@ -211,7 +218,7 @@ export default class DashboardComponent implements OnInit, OnDestroy {
         this.cerrarModal();
       },
       error: (err) => {
-        alert(`Error al crear la cita: ${err.error.mensaje || 'Inténtalo de nuevo.'}`);
+        alert(`Error al crear la cita: ${err.error?.mensaje || 'Inténtalo de nuevo.'}`);
         this.isSavingCita = false;
       },
       complete: () => this.isSavingCita = false
@@ -237,7 +244,7 @@ export default class DashboardComponent implements OnInit, OnDestroy {
         this.cerrarModal();
       },
       error: (err) => {
-        alert(`Error al actualizar la cita: ${err.error.mensaje || 'Inténtalo de nuevo.'}`);
+        alert(`Error al actualizar la cita: ${err.error?.mensaje || 'Inténtalo de nuevo.'}`);
         this.isSavingCita = false;
       },
       complete: () => this.isSavingCita = false
@@ -256,7 +263,7 @@ export default class DashboardComponent implements OnInit, OnDestroy {
         this.actualizarEventosCalendario();
       },
       error: (err) => {
-        alert(`Error al cancelar la cita: ${err.error.mensaje || 'Inténtalo de nuevo.'}`);
+        alert(`Error al cancelar la cita: ${err.error?.mensaje || 'Inténtalo de nuevo.'}`);
       }
     });
   }
